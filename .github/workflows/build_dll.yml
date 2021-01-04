@@ -31,6 +31,7 @@ jobs:
       run: |
         git config --global user.email AutoupdateRobot@email.com
         git config --global user.name AutoupdateRobot
+        git add .
         git commit -m "update dll" -a  
     - name: Push dll file
       uses: ad-m/github-push-action@master
