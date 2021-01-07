@@ -131,7 +131,7 @@ void GUI::handleToggle() noexcept
     }
 }
 
-void GUI::hotkey(int& key) noexcept
+[[deprecated]] void GUI::hotkey(int& key) noexcept
 {
     key ? ImGui::Text("[ %s ]", interfaces->inputSystem->virtualKeyToString(key)) : ImGui::TextUnformatted("[ key ]");
 
@@ -439,9 +439,11 @@ void GUI::renderTriggerbotWindow(bool contentOnly) noexcept
     ImGui::SameLine();
     ImGui::Checkbox("Enabled", &config->triggerbot[currentWeapon].enabled);
     ImGui::Separator();
-    ImGui::Checkbox("On key", &config->triggerbot[currentWeapon].onKey);
+    ImGui::Checkbox("On key", &config->triggerbotOnKey);
     ImGui::SameLine();
-    hotkey(config->triggerbot[currentWeapon].key);
+    ImGui::PushID("Triggerbot Key");
+    hotkey2("", config->triggerbotKey);
+    ImGui::PopID();
     ImGui::Checkbox("Friendly fire", &config->triggerbot[currentWeapon].friendlyFire);
     ImGui::Checkbox("Scoped only", &config->triggerbot[currentWeapon].scopedOnly);
     ImGui::Checkbox("Ignore flash", &config->triggerbot[currentWeapon].ignoreFlash);
