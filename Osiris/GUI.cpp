@@ -99,7 +99,7 @@ void GUI::updateColors() const noexcept
 static void hotkey2(const char* label, KeyBind& key, float samelineOffset = 0.0f, const ImVec2& size = { 100.0f, 0.0f }) noexcept
 {
     const auto id = ImGui::GetID(label);
-    ImGui::PushID(id);
+    ImGui::PushID(label);
 
     ImGui::TextUnformatted(label);
     ImGui::SameLine(samelineOffset);
@@ -993,7 +993,9 @@ void GUI::renderVisualsWindow(bool contentOnly) noexcept
     ImGui::NextColumn();
     ImGui::Checkbox("Zoom", &config->visuals.zoom);
     ImGui::SameLine();
-    hotkey(config->visuals.zoomKey);
+    ImGui::PushID("Zoom Key");
+    hotkey2("", config->visuals.zoomKey);
+    ImGui::PopID();
     ImGui::Checkbox("Thirdperson", &config->visuals.thirdperson);
     ImGui::SameLine();
     ImGui::PushID("Thirdperson Key");
@@ -1309,10 +1311,14 @@ void GUI::renderMiscWindow(bool contentOnly) noexcept
     ImGui::Checkbox("Moonwalk", &config->misc.moonwalk);
     ImGui::Checkbox("Edge Jump", &config->misc.edgejump);
     ImGui::SameLine();
-    hotkey(config->misc.edgejumpkey);
+    ImGui::PushID("Edge Jump Key");
+    hotkey2("", config->misc.edgejumpkey);
+    ImGui::PopID();
     ImGui::Checkbox("Slowwalk", &config->misc.slowwalk);
     ImGui::SameLine();
-    hotkey(config->misc.slowwalkKey);
+    ImGui::PushID("Edge Jump Key");
+    hotkey2("", config->misc.slowwalkKey);
+    ImGui::PopID();
     ImGuiCustom::colorPicker("Noscope crosshair", config->misc.noscopeCrosshair);
     ImGuiCustom::colorPicker("Recoil crosshair", config->misc.recoilCrosshair);
     ImGui::Checkbox("Auto pistol", &config->misc.autoPistol);
@@ -1366,7 +1372,9 @@ void GUI::renderMiscWindow(bool contentOnly) noexcept
     ImGui::Checkbox("Quick reload", &config->misc.quickReload);
     ImGui::Checkbox("Prepare revolver", &config->misc.prepareRevolver);
     ImGui::SameLine();
-    hotkey(config->misc.prepareRevolverKey);
+    ImGui::PushID("Prepare revolver Key");
+    hotkey2("", config->misc.prepareRevolverKey);
+    ImGui::PopID();
     ImGui::Combo("Hit Sound", &config->misc.hitSound, "None\0Metal\0Gamesense\0Bell\0Glass\0Custom\0");
     if (config->misc.hitSound == 5) {
         ImGui::InputText("Hit Sound filename", &config->misc.customHitSound);
@@ -1385,7 +1393,9 @@ void GUI::renderMiscWindow(bool contentOnly) noexcept
     ImGui::InputInt("Choked packets", &config->misc.chokedPackets, 1, 5);
     config->misc.chokedPackets = std::clamp(config->misc.chokedPackets, 0, 64);
     ImGui::SameLine();
-    hotkey(config->misc.chokedPacketsKey);
+    ImGui::PushID("Choked packets Key");
+    hotkey2("", config->misc.chokedPacketsKey);
+    ImGui::PopID();
     ImGui::Text("Quick healthshot");
     ImGui::SameLine();
     hotkey(config->misc.quickHealthshotKey);
