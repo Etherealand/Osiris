@@ -174,14 +174,12 @@ void Visuals::modifySmoke(FrameStage stage) noexcept
     }
 }
 
-static bool isInThirdperson = true;
-
 void Visuals::thirdperson() noexcept
 {
     if (!config->visuals.thirdperson)
         return;
 
-    memory->input->isCameraInThirdPerson = isInThirdperson && localPlayer && localPlayer->isAlive();
+    memory->input->isCameraInThirdPerson = (!config->visuals.thirdpersonKey.isSet() || config->visuals.thirdpersonKey.isToggled()) && localPlayer && localPlayer->isAlive();
     memory->input->cameraOffset.z = static_cast<float>(config->visuals.thirdpersonDistance); 
 }
 
@@ -257,13 +255,11 @@ void Visuals::removeShadows() noexcept
     shadows->setValue(!config->visuals.noShadows);
 }
 
-static bool zoomToggled = false;
-
 void Visuals::applyZoom(FrameStage stage) noexcept
 {
     if (config->visuals.zoom && localPlayer) {
         if (stage == FrameStage::RENDER_START && (localPlayer->fov() == 90 || localPlayer->fovStart() == 90)) {
-            if (zoomToggled) {
+            if (config->visuals.zoomKey.isToggled()) {
                 localPlayer->fov() = 40;
                 localPlayer->fovStart() = 40;
             }
@@ -505,11 +501,6 @@ void Visuals::bulletTracer(GameEvent& event) noexcept
 
 void Visuals::updateInput() noexcept
 {
-    if (config->visuals.thirdpersonKey.isPressed())
-        isInThirdperson = !isInThirdperson;
-    else if (config->visuals.thirdpersonKey == KeyBind::NONE)
-        isInThirdperson = true;
-
-    if (config->visuals.zoomKey.isPressed())
-        zoomToggled = !zoomToggled;
+    config->visuals.thirdpersonKey.handleToggle();
+    config->visuals.zoomKey.handleToggle();
 }
