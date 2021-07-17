@@ -1,17 +1,33 @@
+#include <algorithm>
 #include <array>
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include "../nlohmann/json.hpp"
+#include "../imgui/imgui.h"
 
-#include "../Config.h"
+#include "../ConfigStructs.h"
+#include "../InputUtil.h"
 #include "Glow.h"
+#include "../Helpers.h"
 #include "../Interfaces.h"
 #include "../Memory.h"
-#include "../SDK/Entity.h"
+#include "../SDK/ClassId.h"
 #include "../SDK/ClientClass.h"
+#include "../SDK/Engine.h"
+#include "../SDK/Entity.h"
+#include "../SDK/EntityList.h"
 #include "../SDK/GlowObjectManager.h"
-#include "../SDK/GlobalVars.h"
+#include "../SDK/LocalPlayer.h"
 #include "../SDK/Utils.h"
+#include "../SDK/UtlVector.h"
+#include "../SDK/Vector.h"
 #include "../imguiCustom.h"
+
+#if OSIRIS_GLOW()
 
 struct GlowItem : Color4 {
     bool enabled = false;
@@ -25,6 +41,8 @@ struct PlayerGlow {
 
 static std::unordered_map<std::string, PlayerGlow> playerGlowConfig;
 static std::unordered_map<std::string, GlowItem> glowConfig;
+static KeyBindToggle glowToggleKey;
+static KeyBind glowHoldKey;
 
 static std::vector<std::pair<int, int>> customGlowEntities;
 
@@ -36,6 +54,13 @@ void Glow::render() noexcept
     auto& glow = glowConfig;
 
     Glow::clearCustomObjects();
+
+    if (glowToggleKey.isSet()) {
+        if (!glowToggleKey.isToggled() && !glowHoldKey.isDown())
+            return;
+    } else if (glowHoldKey.isSet() && !glowHoldKey.isDown()) {
+        return;
+    }
 
     for (int i = interfaces->engine->getMaxClients() + 1; i <= interfaces->entityList->getHighestEntityIndex(); ++i) {
         const auto entity = interfaces->entityList->getEntity(i);
@@ -76,14 +101,14 @@ void Glow::render() noexcept
                 glowobject.glowAlpha = glow.color[3];
                 glowobject.glowStyle = glow.style;
                 glowobject.glowAlphaMax = 0.6f;
-                if (glow.healthBased && health)
-                    glowobject.glowColor = { 1.0f - health / 100.0f,  health / 100.0f, 0.0f };
-                else if (glow.rainbow) {
+                if (glow.healthBased && health) {
+                    Helpers::healthColor(std::clamp(health / 100.0f, 0.0f, 1.0f), glowobject.glowColor.x, glowobject.glowColor.y, glowobject.glowColor.z);
+                } else if (glow.rainbow) {
                     const auto [r, g, b] { rainbowColor(glow.rainbowSpeed) };
                     glowobject.glowColor = { r, g, b };
-                }
-                else
+                } else {
                     glowobject.glowColor = { glow.color[0], glow.color[1], glow.color[2] };
+                }
             }
         };
 
@@ -93,7 +118,7 @@ void Glow::render() noexcept
                 applyGlow(cfg.all, entity->health());
             else if (cfg.visible.enabled && entity->visibleTo(localPlayer.get()))
                 applyGlow(cfg.visible, entity->health());
-            else if (cfg.occluded.enabled)
+            else if (cfg.occluded.enabled && !entity->visibleTo(localPlayer.get()))
                 applyGlow(cfg.occluded, entity->health());
         };
 
@@ -146,6 +171,11 @@ void Glow::clearCustomObjects() noexcept
     customGlowEntities.clear();
 }
 
+void Glow::updateInput() noexcept
+{
+    glowToggleKey.handleToggle();
+}
+
 static bool glowWindowOpen = false;
 
 void Glow::menuBarItem() noexcept
@@ -173,6 +203,11 @@ void Glow::drawGUI(bool contentOnly) noexcept
         ImGui::SetNextWindowSize({ 450.0f, 0.0f });
         ImGui::Begin("Glow", &glowWindowOpen, ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
     }
+
+    ImGui::hotkey("Toggle Key", glowToggleKey, 80.0f);
+    ImGui::hotkey("Hold Key", glowHoldKey, 80.0f);
+    ImGui::Separator();
+
     static int currentCategory{ 0 };
     ImGui::PushItemWidth(110.0f);
     ImGui::PushID(0);
@@ -234,6 +269,8 @@ json Glow::toJson() noexcept
     json j;
     j["Items"] = glowConfig;
     j["Players"] = playerGlowConfig;
+    to_json(j["Toggle Key"], glowToggleKey, {});
+    to_json(j["Hold Key"], glowHoldKey, {});
     return j;
 }
 
@@ -248,19 +285,41 @@ static void from_json(const json& j, GlowItem& g)
 
 static void from_json(const json& j, PlayerGlow& g)
 {
-    from_json(j["All"], g.all);
-    from_json(j["Visible"], g.visible);
-    from_json(j["Occluded"], g.occluded);
+    read<value_t::object>(j, "All", g.all);
+    read<value_t::object>(j, "Visible", g.visible);
+    read<value_t::object>(j, "Occluded", g.occluded);
 }
 
 void Glow::fromJson(const json& j) noexcept
 {
     read(j, "Items", glowConfig);
     read(j, "Players", playerGlowConfig);
+    read(j, "Toggle Key", glowToggleKey);
+    read(j, "Hold Key", glowHoldKey);
 }
 
 void Glow::resetConfig() noexcept
 {
     glowConfig = {};
     playerGlowConfig = {};
+    glowToggleKey = {};
+    glowHoldKey = {};
 }
+
+#else
+
+void Glow::render() noexcept {}
+void Glow::clearCustomObjects() noexcept {}
+void Glow::updateInput() noexcept {}
+
+// GUI
+void Glow::menuBarItem() noexcept {}
+void Glow::tabItem() noexcept {}
+void Glow::drawGUI(bool contentOnly) noexcept {}
+
+// Config
+json Glow::toJson() noexcept { return {}; }
+void Glow::fromJson(const json& j) noexcept {}
+void Glow::resetConfig() noexcept {}
+
+#endif

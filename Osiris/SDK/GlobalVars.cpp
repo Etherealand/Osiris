@@ -1,11 +1,9 @@
-#include "GlobalVars.h"
-#include "UserCmd.h"
-#include "../Interfaces.h"
-#include "Engine.h"
 #include "Entity.h"
-#include "EntityList.h"
+#include "GlobalVars.h"
+#include "LocalPlayer.h"
+#include "UserCmd.h"
 
-float GlobalVars::serverTime(UserCmd* cmd) noexcept
+float GlobalVars::serverTime(UserCmd* cmd) const noexcept
 {
     static int tick;
     static UserCmd* lastCmd;
